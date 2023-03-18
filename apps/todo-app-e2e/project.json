@@ -19,7 +19,7 @@
       "executor": "@nrwl/detox:test",
       "options": {
         "detoxConfiguration": "ios.sim.debug",
-        "buildTarget": "todo-app-e2e:build-ios}"
+        "buildTarget": "todo-app-e2e:build-ios"
       },
       "configurations": {
         "production": {
@@ -43,7 +43,7 @@
       "executor": "@nrwl/detox:test",
       "options": {
         "detoxConfiguration": "android.emu.debug",
-        "buildTarget": "todo-app-e2e:build-android}"
+        "buildTarget": "todo-app-e2e:build-android"
       },
       "configurations": {
         "production": {
