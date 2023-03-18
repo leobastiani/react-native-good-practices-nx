@@ -1,0 +1,49 @@
+# heavily inspired by https://github.com/remarkablemark/react-native-cli-quickstart/blob/8408c92455a42737c106d96ba78d78232de866f2/.github/workflows/e2e-android.yml
+name: e2e-android
+on: push
+
+jobs:
+  e2e-android:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          cache: yarn
+          node-version-file: .tool-versions
+
+      - run: yarn install --frozen-lockfile --prefer-offline
+
+      - uses: actions/setup-java@v3
+        with:
+          cache: gradle
+          distribution: zulu
+          java-version: 11
+
+      - uses: actions/cache@v3
+        id: cache-detox-build
+        with:
+          path: apps/todo-app-e2e/android/app/build
+          key: ${{ runner.os }}-detox-build
+          restore-keys: |
+            ${{ runner.os }}-detox-build
+
+      - run: (cd apps/todo-app-e2e && node -e "console.log('AVD_NAME=' + require('./.detoxrc').devices.emulator.device.avdName)" >> $GITHUB_OUTPUT)
+        id: device
+
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          arch: x86_64
+          avd-name: ${{ steps.device.outputs.AVD_NAME }}
+          script: |
+            yarn nx ensure-symlink todo-app
+            yarn nx test-android todo-app-e2e --prod --headless --record-logs all --reuse false --verbose
+
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: detox-artifacts
+          path: apps/todo-app-e2e/artifacts
