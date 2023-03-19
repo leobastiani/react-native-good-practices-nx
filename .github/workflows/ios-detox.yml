@@ -1,0 +1,74 @@
+# https://github.com/remarkablemark/react-native-cli-quickstart/blob/8408c92455a42737c106d96ba78d78232de866f2/.github/workflows/e2e-ios.yml
+name: ios-detox
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  ios-detox:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          cache: yarn
+          node-version-file: .tool-versions
+
+      - name: Install Yarn dependencies
+        run: yarn --frozen-lockfile --prefer-offline
+
+      - name: Cache macOS dependencies
+        id: cache-macos-deps
+        uses: actions/cache@v3
+        with:
+          path: /usr/local/Homebrew
+          key: ${{ runner.os }}-macos-brew
+          restore-keys: |
+            ${{ runner.os }}-macos-brew
+
+      - name: Install macOS dependencies
+        run: |
+          brew tap wix/brew
+          brew install applesimutils
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .tool-versions
+          bundler-cache: true
+
+      - run: node --version
+      - run: ruby --version
+      - run: pod --version
+
+      - run: yarn nx ensure-symlink todo-app
+
+      - name: Cache CocoaPods
+        id: cache-cocoapods
+        uses: actions/cache@v3
+        with:
+          path: apps/todo-app/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('apps/todo-app/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install CocoaPods
+        if: steps.cache-cocoapods.outputs.cache-hit != 'true'
+        run: cd apps/todo-app/ios ; pod install ; cd -
+
+      - run: yarn nx test-ios todo-app-e2e --prod --cleanup --headless --record-logs all --verbose --reuse false
+
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: detox-artifacts
+          path: apps/todo-app-e2e/artifacts

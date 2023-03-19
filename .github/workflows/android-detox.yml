@@ -1,9 +1,13 @@
 # heavily inspired by https://github.com/remarkablemark/react-native-cli-quickstart/blob/8408c92455a42737c106d96ba78d78232de866f2/.github/workflows/e2e-android.yml
-name: e2e-android
-on: push
+name: android-detox
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-  e2e-android:
+  android-detox:
     runs-on: macos-latest
     timeout-minutes: 30
     steps:

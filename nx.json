@@ -9,7 +9,8 @@
           "build",
           "lint",
           "test",
-          "e2e"
+          "test-android",
+          "test-ios"
         ],
         "accessToken": "MjM0OWY3MWEtMDM3Ni00ZjQ1LWI5YWEtNjIzZmY3ZDBkOTE3fHJlYWQtd3JpdGU="
       }

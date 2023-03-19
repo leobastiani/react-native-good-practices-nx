@@ -31,6 +31,12 @@
         "type": "iPhone 14"
       }
     },
+    "attached": {
+      "type": "android.attached",
+      "device": {
+        "adbName": ".*"
+      }
+    },
     "emulator": {
       "type": "android.emulator",
       "device": {

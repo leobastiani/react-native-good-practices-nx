@@ -1,0 +1,28 @@
+# from https://nx.dev/recipes/ci/monorepo-ci-github-actions#distributed-ci-with-nx-cloud
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  main:
+    name: Nx Cloud - Main Job
+    uses: nrwl/ci/.github/workflows/nx-cloud-main.yml@v0.11.3
+    with:
+      number-of-agents: 3
+      node-version: 19.8.1
+      yarn-version: 1.22.19
+      parallel-commands-on-agents: |
+        yarn nx affected --verbose --target=lint --parallel=3 & \
+        yarn nx affected --verbose --target=test --parallel=3 --configuration=ci & \
+        yarn nx affected --verbose --target=build --parallel=3
+
+  agents:
+    name: Nx Cloud - Agents
+    uses: nrwl/ci/.github/workflows/nx-cloud-agents.yml@v0.11.3
+    with:
+      number-of-agents: 3
+      node-version: 19.8.1
+      yarn-version: 1.22.19
