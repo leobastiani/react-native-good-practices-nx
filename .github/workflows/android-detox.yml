@@ -2,14 +2,13 @@
 name: android-detox
 on:
   push:
-    branches:
-      - main
   pull_request:
 
 jobs:
-  android-detox:
-    runs-on: macos-latest
-    timeout-minutes: 30
+  check-affected:
+    runs-on: ubuntu-latest
+    outputs:
+      affecteds: ${{ steps.affecteds.outputs.affecteds }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -25,24 +24,47 @@ jobs:
       - run: yarn install --frozen-lockfile --prefer-offline
 
       - id: affecteds
-        run: yarn --silent nx print-affected --target=test-android --projects=todo-app-e2e --configuration production | jq '.projects | length'
+        run: echo "affecteds=$(yarn --silent nx print-affected --target=test-android --projects=todo-app-e2e --configuration production --select=projects)" | tee -a $GITHUB_OUTPUT
+
+  android-detox:
+    runs-on: macos-latest
+    needs: check-affected
+    timeout-minutes: 30
+    if: needs.check-affected.outputs.affecteds != ''
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: nrwl/nx-set-shas@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          cache: yarn
+          node-version-file: .tool-versions
+
+      - run: yarn install --frozen-lockfile --prefer-offline
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/todo-app/**/*.gradle*', 'apps/todo-app/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - uses: actions/setup-java@v3
-        if: ${{ steps.affecteds.outputs.stdout }} > 0
         with:
-          cache: gradle
           distribution: zulu
           java-version: 11
 
       - run: yarn nx run todo-app-e2e:build-android --configuration production --verbose
-        if: ${{ steps.affecteds.outputs.stdout }} > 0
 
       - id: device
-        run: (cd apps/todo-app-e2e && node -e "console.log('AVD_NAME=' + require('./.detoxrc').devices.emulator.device.avdName)" >> $GITHUB_OUTPUT)
-        if: ${{ steps.affecteds.outputs.stdout }} > 0
+        run: (cd apps/todo-app-e2e && node -e "console.log('AVD_NAME=' + require('./.detoxrc').devices.emulator.device.avdName)" | tee -a $GITHUB_OUTPUT)
 
       - uses: reactivecircus/android-emulator-runner@v2
-        if: ${{ steps.affecteds.outputs.stdout }} > 0
         with:
           api-level: 31
           arch: x86_64
@@ -50,7 +72,7 @@ jobs:
           script: yarn nx run todo-app-e2e:test-android --configuration production --headless --record-logs all --reuse false --verbose --build-target=
 
       - uses: actions/upload-artifact@v3
-        if: ${{ steps.affecteds.outputs.stdout }} > 0 && failure()
+        if: failure()
         with:
           name: detox-artifacts
           path: apps/todo-app-e2e/artifacts
