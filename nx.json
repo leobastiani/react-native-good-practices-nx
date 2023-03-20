@@ -9,6 +9,8 @@
           "build",
           "lint",
           "test",
+          "build-android",
+          "build-ios",
           "test-android",
           "test-ios"
         ],

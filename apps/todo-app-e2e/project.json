@@ -7,12 +7,17 @@
     "build-ios": {
       "executor": "@nrwl/detox:build",
       "dependsOn": ["^ensure-symlink"],
+      "outputs": [
+        "{workspaceRoot}/apps/todo-app/ios/build/Build/Products/{options.outputKind}-iphonesimulator"
+      ],
       "options": {
-        "detoxConfiguration": "ios.sim.debug"
+        "detoxConfiguration": "ios.sim.debug",
+        "outputKind": "Debug"
       },
       "configurations": {
         "production": {
-          "detoxConfiguration": "ios.sim.release"
+          "detoxConfiguration": "ios.sim.release",
+          "outputKind": "Release"
         }
       }
     },
@@ -33,12 +38,17 @@
     "build-android": {
       "executor": "@nrwl/detox:build",
       "dependsOn": ["^ensure-symlink"],
+      "outputs": [
+        "{workspaceRoot}/apps/todo-app/android/app/build/outputs/apk/androidTest/{options.outputKind}"
+      ],
       "options": {
-        "detoxConfiguration": "android.emu.debug"
+        "detoxConfiguration": "android.emu.debug",
+        "outputKind": "debug"
       },
       "configurations": {
         "production": {
-          "detoxConfiguration": "android.emu.release"
+          "detoxConfiguration": "android.emu.release",
+          "outputKind": "release"
         }
       }
     },

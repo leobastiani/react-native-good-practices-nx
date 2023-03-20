@@ -9,50 +9,58 @@ on:
 jobs:
   ios-detox:
     runs-on: macos-latest
+    timeout-minutes: 60
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: nrwl/nx-set-shas@v3
+
+      - uses: actions/setup-node@v3
         with:
           cache: yarn
           node-version-file: .tool-versions
 
-      - name: Install Yarn dependencies
-        run: yarn --frozen-lockfile --prefer-offline
+      - run: yarn --frozen-lockfile --prefer-offline
 
-      - name: Cache macOS dependencies
-        id: cache-macos-deps
+      - id: affecteds
+        run: yarn --silent nx print-affected --target=test-ios --projects=todo-app-e2e --configuration production | jq '.projects | length'
+
+      - id: cache-macos-deps
         uses: actions/cache@v3
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
         with:
           path: /usr/local/Homebrew
           key: ${{ runner.os }}-macos-brew
           restore-keys: |
             ${{ runner.os }}-macos-brew
 
-      - name: Install macOS dependencies
-        run: |
+      - run: |
           brew tap wix/brew
           brew install applesimutils
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
           HOMEBREW_NO_INSTALL_CLEANUP: 1
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
         with:
           ruby-version: .tool-versions
           bundler-cache: true
 
-      - run: node --version
-      - run: ruby --version
-      - run: pod --version
+      - run: |
+          node --version
+          ruby --version
+          pod --version
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
 
       - run: yarn nx ensure-symlink todo-app
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
 
-      - name: Cache CocoaPods
-        id: cache-cocoapods
+      - id: cache-cocoapods
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
         uses: actions/cache@v3
         with:
           path: apps/todo-app/ios/Pods
@@ -60,15 +68,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pods-
 
-      - name: Install CocoaPods
-        if: steps.cache-cocoapods.outputs.cache-hit != 'true'
-        run: cd apps/todo-app/ios ; pod install ; cd -
+      - run: pod install
+        working-directory: apps/todo-app/ios
+        if: ${{ steps.affecteds.outputs.stdout }} > 0 && steps.cache-cocoapods.outputs.cache-hit != 'true'
 
-      - run: yarn nx test-ios todo-app-e2e --prod --cleanup --headless --record-logs all --verbose --reuse false
+      - run: yarn detox rebuild-framework-cache
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
+        working-directory: apps/todo-app-e2e
 
-      - name: Upload artifacts
-        if: failure()
-        uses: actions/upload-artifact@v3
+      - run: yarn nx run todo-app-e2e:build-ios --configuration production --verbose
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
+
+      - run: yarn nx run todo-app-e2e:test-ios --configuration production --cleanup --headless --record-logs all --verbose --reuse false
+        if: ${{ steps.affecteds.outputs.stdout }} > 0
+
+      - uses: actions/upload-artifact@v3
+        if: ${{ steps.affecteds.outputs.stdout }} > 0 && failure()
         with:
           name: detox-artifacts
           path: apps/todo-app-e2e/artifacts
