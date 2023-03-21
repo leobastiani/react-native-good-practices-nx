@@ -29,7 +29,7 @@ jobs:
   android-detox:
     runs-on: macos-latest
     needs: check-affected
-    timeout-minutes: 30
+    timeout-minutes: 120
     if: needs.check-affected.outputs.affecteds != ''
     steps:
       - uses: actions/checkout@v3
@@ -59,6 +59,15 @@ jobs:
           distribution: zulu
           java-version: 11
 
+      - uses: actions/cache@v3
+        with:
+          path: apps/todo-app/android/app/build
+          key: ${{ runner.os }}-detox-todo-app-android-build
+          restore-keys: |
+            ${{ runner.os }}-detox-todo-app-android-build
+
+      - run: yarn nx ensure-symlink todo-app
+
       - run: yarn nx run todo-app-e2e:build-android --configuration production --verbose
 
       - id: device
@@ -66,10 +75,11 @@ jobs:
 
       - uses: reactivecircus/android-emulator-runner@v2
         with:
+          emulator-boot-timeout: 1800
           api-level: 31
           arch: x86_64
           avd-name: ${{ steps.device.outputs.AVD_NAME }}
-          script: yarn nx run todo-app-e2e:test-android --configuration production --headless --record-logs all --reuse false --verbose --build-target=
+          script: yarn nx run todo-app-e2e:test-android --configuration production --headless --record-logs all --reuse false --build-target= --verbose
 
       - uses: actions/upload-artifact@v3
         if: failure()
