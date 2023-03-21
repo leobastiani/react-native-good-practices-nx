@@ -1,8 +1,12 @@
 # https://github.com/remarkablemark/react-native-cli-quickstart/blob/8408c92455a42737c106d96ba78d78232de866f2/.github/workflows/e2e-ios.yml
 name: ios-detox
+
 on:
-  push:
-  pull_request:
+  workflow_call:
+    inputs:
+      app-name:
+        required: true
+        type: string
 
 jobs:
   check-affected:
@@ -24,7 +28,7 @@ jobs:
       - run: yarn install --frozen-lockfile --prefer-offline
 
       - id: affecteds
-        run: echo "affecteds=$(yarn --silent nx print-affected --target=test-ios --projects=todo-app-e2e --configuration production --select=projects)" | tee -a $GITHUB_OUTPUT
+        run: echo "affecteds=$(yarn --silent nx print-affected --target=test-ios --projects=${{ inputs.app-name }}-e2e --configuration production --select=projects)" | tee -a $GITHUB_OUTPUT
 
   ios-detox:
     runs-on: macos-latest
@@ -65,36 +69,36 @@ jobs:
           ruby-version: .tool-versions
           bundler-cache: true
 
-      - run: yarn nx ensure-symlink todo-app
+      - run: yarn nx ensure-symlink ${{ inputs.app-name }}
 
       - id: cache-cocoapods
         uses: actions/cache@v3
         with:
-          path: apps/todo-app/ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('apps/todo-app/ios/Podfile.lock') }}
+          path: apps/${{ inputs.app-name }}/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('apps/${{ inputs.app-name }}/ios/Podfile.lock') }}
           restore-keys: |
             ${{ runner.os }}-pods-
 
       - run: pod install
         if: steps.cache-cocoapods.outputs.cache-hit != 'true'
-        working-directory: apps/todo-app/ios
+        working-directory: apps/${{ inputs.app-name }}/ios
 
       - run: yarn detox rebuild-framework-cache
-        working-directory: apps/todo-app-e2e
+        working-directory: apps/${{ inputs.app-name }}-e2e
 
       - uses: actions/cache@v3
         with:
-          path: apps/todo-app/ios/build
-          key: ${{ runner.os }}-detox-todo-app-ios-build
+          path: apps/${{ inputs.app-name }}/ios/build
+          key: ${{ runner.os }}-detox-${{ inputs.app-name }}-ios-build
           restore-keys: |
-            ${{ runner.os }}-detox-todo-app-ios-build
+            ${{ runner.os }}-detox-${{ inputs.app-name }}-ios-build
 
-      - run: yarn nx run todo-app-e2e:build-ios --configuration production --verbose
+      - run: yarn nx run ${{ inputs.app-name }}-e2e:build-ios --configuration production --verbose
 
-      - run: yarn nx run todo-app-e2e:test-ios --configuration production --cleanup --headless --record-logs all --reuse false --build-target= --verbose
+      - run: yarn nx run ${{ inputs.app-name }}-e2e:test-ios --configuration production --cleanup --headless --record-logs all --reuse false --build-target= --verbose
 
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: detox-artifacts
-          path: apps/todo-app-e2e/artifacts
+          path: apps/${{ inputs.app-name }}-e2e/artifacts

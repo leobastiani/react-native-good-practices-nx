@@ -1,0 +1,10 @@
+name: todo-app-android-detox
+
+on:
+  push:
+
+jobs:
+  todo-app-android-detox:
+    uses: ./.github/workflows/android-detox.yml
+    with:
+      app-name: todo-app

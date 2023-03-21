@@ -1,0 +1,10 @@
+name: todo-app-ios-detox
+
+on:
+  push:
+
+jobs:
+  todo-app-ios-detox:
+    uses: ./.github/workflows/ios-detox.yml
+    with:
+      app-name: todo-app

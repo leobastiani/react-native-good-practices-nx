@@ -1,8 +1,8 @@
 # from https://nx.dev/recipes/ci/monorepo-ci-github-actions#distributed-ci-with-nx-cloud
 name: CI
+
 on:
   push:
-  pull_request:
 
 jobs:
   main:
