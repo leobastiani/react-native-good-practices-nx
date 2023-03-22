@@ -7,4 +7,4 @@ jobs:
   todo-app-android-detox:
     uses: ./.github/workflows/android-detox.yml
     with:
-      app-name: todo-app
+      app-name: todo-app-mobile

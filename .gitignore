@@ -108,4 +108,4 @@ yarn-error.log
 **/coverage
 
 
-apps/todo-app-e2e/artifacts
+apps/todo-app-mobile-e2e/artifacts

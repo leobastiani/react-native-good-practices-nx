@@ -14,7 +14,8 @@ jobs:
       yarn-version: 1.22.19
       parallel-commands-on-agents: |
         yarn nx affected --verbose --target=lint --parallel=3 & \
-        yarn nx affected --verbose --target=test --parallel=3 --configuration=ci & \
+        yarn nx affected --verbose --target=test --configuration=ci --parallel=3 & \
+        yarn nx affected --verbose --target=e2e --configuration=production --parallel=3 & \
         yarn nx affected --verbose --target=build --parallel=3
 
   agents:
